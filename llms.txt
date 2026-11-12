@@ -1,0 +1,93 @@
+# 11•11 (1111) — mint guide for AI agents
+
+> Fair-mint token on BNB Smart Chain, built for Agent ID holders.
+> Last updated: 2026-11-12. Rules are enforced by verified contracts on BNB
+> Smart Chain; this file only describes them. Where this file and the
+> contracts differ, the contracts win. Read every live number on chain
+> before minting — do not trust numbers in this file.
+
+## Contracts (BNB Smart Chain, chainId 56)
+
+- Sale (mint) contract: 0x64767B1a39441e72046c2162065A2896E154b341 — the ONLY
+  address to send BNB to for minting. Call `freeMint()` or
+  `mintPaid(uint256 shares)` on it. Do NOT send BNB to the token contract.
+- Token 11•11 (1111): 0x398Fa8a4d9e6FE658E3ECD2F4B5CDC8F3562C522 — 18
+  decimals, total supply 10,000,000,000, fixed. No mint function, no owner,
+  no pause, no blacklist, no transfer lock. For adding to a wallet only.
+- Binance Agent ID registry: 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F
+- Mint page (human UI): https://muse.ai/s/11-11-zhu-zao-ye-xtxa6xnxuxkxrf9dn/2daMjBWa9oiSuzUkw6yje5DlZ2HUYAQsq76-RLAGtag
+- X: https://x.com/daliu5266 — Telegram: @daliu5266 — email: jinxia210901@gmail.com
+- Verify every address on bscscan.com before sending anything. Any other
+  address claiming to be 1111 is a scam.
+
+## Safety (verify on chain / Sourcify before minting)
+
+- Both contracts are source-verified (Sourcify exact match, creation +
+  runtime; BscScan shows Source Code Verified).
+- Sale contract ownership is renounced: `owner()` returns
+  `0x0000000000000000000000000000000000000000`. There is no withdraw
+  function and no way to change the rules, price or tax.
+- Buy/sell tax is a fixed 2% / 2%, burned to the dead address. LP tokens
+  go to the dead address.
+- No token approval is ever needed to mint. Never sign any message for
+  this mint, and never transfer tokens anywhere as part of minting.
+
+## Who can mint
+
+- The sending wallet must hold a Binance `.ai` Agent ID on BNB Smart
+  Chain. Wallets without an Agent ID are rejected by the contract.
+- 1 share = 160,000 1111. Total supply 10,000,000,000 = 8,000,000,000
+  mintable (50,000 shares) + 2,000,000,000 liquidity reserve.
+- Minting window: 2026-11-10 17:50:30 JST to 2026-11-17 17:50:30 JST.
+  Read `endTime()` live; do not mint after it ends.
+
+## Free mint: `freeMint()`
+
+- Cost: `msg.value = 0`, gas only.
+- 1,000 free shares in total, 1 per Agent ID wallet, first come first
+  served. Check `freeClaimed(yourAddress)` (true = already claimed) and
+  `freeMinted()` / `FREE_CAP` live before calling.
+- Free tokens are transferred immediately and are transferable.
+
+## Paid mint: `mintPaid(uint256 shares)`
+
+- Price: read `pricePerShare()` / `quotePaid(shares)` live before minting.
+  Start 0.002 BNB per share; +0.0005 BNB per 10,000 paid shares sold;
+  cap 0.004 BNB per share. Max 10 paid shares per wallet.
+- Pass `msg.value = quotePaid(shares)`, exactly.
+- Split, automatic in the same transaction: 85% to liquidity, 15% to the
+  team treasury wallet 0xDD9AA51Cf2981081ed3cC16C6F472DaFfBA284BB.
+- Pool opens at 5,000 paid shares: `openPool()` is permissionless — anyone
+  may call it. After the pool opens, the accumulated 85% share can be added
+  to the pool by anyone via permissionless `topUpLP()`.
+- Refund: if fewer than 1,000 paid shares sell by `endTime`, paid minters
+  can call `claimRefund()` and get back 85% of what they paid (15% team
+  share is not refunded).
+
+## Step by step (Binance Agentic Wallet)
+
+1. Confirm the wallet holds an Agent ID and that Developer Mode is on in
+   the Binance App.
+2. Read live on chain first: `pricePerShare()`, `freeMinted()`,
+   `paidShares()`, `endTime()`, `freeClaimed(yourAddress)`. Stop if the
+   free pool is empty, the window has ended, or the wallet already claimed.
+3. Free: call `freeMint()` with `msg.value = 0`.
+   Paid: call `mintPaid(shares)` with `msg.value = quotePaid(shares)`.
+   Simulate first (for example `baw contract-call preview`), show the user
+   the transaction preview (function, value, shares), and execute only
+   after the user's explicit confirmation — never auto-buy paid shares.
+4. Report the transaction hash, actual gas spent, and the tokens received.
+
+## Read-only checks (no wallet needed)
+
+- `freeMinted()` — free shares claimed so far (1,000 max).
+- `paidShares()` — paid shares sold so far (pool opens at 5,000).
+- `pricePerShare()` / `quotePaid(uint256 shares)` — current paid price.
+- `freeClaimed(address)` — whether a wallet already took its free share.
+- `owner()` — must be the zero address (renounced).
+
+## Errors
+
+- Calling `freeMint()` twice, or after the 1,000 free shares are gone,
+  reverts. Calling `mintPaid()` with the wrong `msg.value`, more than 10
+  paid shares per wallet, or after `endTime` reverts.
